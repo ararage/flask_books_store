@@ -4,7 +4,7 @@ from flask_login import UserMixin
 from app import login_manager
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -13,9 +13,13 @@ class User(db.Model):
     user_password = db.Column(db.String(80))
     registration_date = db.Column(db.DateTime, default=datetime.now)
 
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.user_password, password)
+
     @classmethod
     def create_user(cls, user, email, password):
-        user = cls(user_name=user, user_email=email,
+        user = cls(user_name=user,
+                   user_email=email,
                    user_password=bcrypt.generate_password_hash(password).decode('utf-8'))
 
         db.session.add(user)
@@ -23,6 +27,6 @@ class User(db.Model):
         return user
 
 
-@login_manager.user_loader()
+@login_manager.user_loader  # stores the active user's ID in the session
 def load_user(id):
-    return User.query.get(int(id))
+    return User.query.get(int(id)) # Convert uncide to integer
